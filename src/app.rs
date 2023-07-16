@@ -2,7 +2,11 @@ use leptos::*;
 use leptos_meta::*;
 // use leptos_router::*;
 
-use crate::model::conversation::{Conversation, Message};
+use crate::{model::conversation::{Conversation, Message}, api::converse};
+
+mod components;
+use components::chat_area::ChatArea;
+use components::type_area::TypeArea;
 
 #[component]
 pub fn App(cx: Scope) -> impl IntoView {
@@ -17,15 +21,38 @@ pub fn App(cx: Scope) -> impl IntoView {
             user: true,
         };
         set_conversation.update(move |c| {
-            c.message.push(user_message);
+            c.messages.push(user_message);
         });
 
         // TODO: converse
+        converse(cx, conversation.get())
+    });
+
+    create_effect(cx, move |_| {
+        if let Some(_) = send.input().get() {
+            let model_message = Message {
+                text: String::from("..."),
+                user: false,
+            };
+
+            set_conversation.update(move |c| {
+                c.messages.push(model_message);
+            })
+        }
+    });
+
+    create_effect(cx, move |_| {
+        if let Some(Ok(response)) = send.value().get() {
+            set_conversation.update(move |c| {
+                c.messages.last_mut().unwrap().text = response;
+            });
+        }
     });
 
     view! { cx,
         // injects a stylesheet into the document <head>
         // id=leptos means cargo-leptos will hot-reload this stylesheet
+        //<Stylesheet id="leptos" href="/pkg/leptos_start.css"/>
         <Stylesheet id="leptos" href="/pkg/leptos_start.css"/>
 
         // sets the document title
